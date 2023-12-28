@@ -1,24 +1,22 @@
 import * as Phaser from 'phaser';
+import { battleUiTextStyle } from './battle-menu-config';
 import { Direction } from '../../../common/direction';
 import { exhaustiveGuard } from '../../../utils/guard';
 import { monsterAssetsKeys, uiAssetKeys } from '../../../assets/asset-keys';
 import { PlayerInputEnum } from '../../../enums/PlayerInputEnum';
-
-const battleMenuOptions = Object.freeze({
-  fight: 'FIGHT',
-  switch: 'SWITCH',
-  item: 'ITEM',
-  flee: 'FLEE',
-});
-
-type BattleMenuOptions = typeof battleMenuOptions;
-
-const battleUiTextStyle = {
-  color: 'black',
-  fontSize: '30px',
-};
+import {
+  ActiveBattleMenu,
+  AttackMoveOptions,
+  BattleMenuOptions,
+  battleMenuOptions,
+} from './battle-menu-options';
 
 const battleMenuCursorPosition = Object.freeze({
+  x: 42,
+  y: 38,
+});
+
+const attackMenuCursorPosition = Object.freeze({
   x: 42,
   y: 38,
 });
@@ -26,7 +24,9 @@ const battleMenuCursorPosition = Object.freeze({
 export class BattleMenu {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
+    this.activeBattleMenu = 'battleMain';
     this.selectedBattleMenuOption = 'fight';
+    this.selectedAttackMenuOption = 'move1';
     this.createMainInfoPane();
     this.createMainBattleMenu();
     this.createMonsterAttackSubMenu();
@@ -40,8 +40,11 @@ export class BattleMenu {
   private mainBattleMenuCursorPhaserImageGameObject: Phaser.GameObjects.Image;
   private attackBattleMenuCursorPhaserImageGameObject: Phaser.GameObjects.Image;
   private selectedBattleMenuOption: keyof BattleMenuOptions;
+  private selectedAttackMenuOption: keyof AttackMoveOptions;
+  private activeBattleMenu: keyof ActiveBattleMenu;
 
   public showMainBattleMenu(): void {
+    this.activeBattleMenu = 'battleMain';
     this.battleTextGameObjectLine1.setText('what should');
     this.mainBattleMenuPhaserContainerGameObject.setAlpha(1);
     this.battleTextGameObjectLine1.setAlpha(1);
@@ -60,6 +63,7 @@ export class BattleMenu {
   }
 
   public showMonsterAttackSubMenu(): void {
+    this.activeBattleMenu = 'battleMoveSelect';
     this.moveSelectionSubBattleMenuPhaserContainerGameObject.setAlpha(1);
   }
 
@@ -80,6 +84,8 @@ export class BattleMenu {
     }
     this.updateSelectedBattleMenuOptionFromInput(input);
     this.moveMainBattleMenuCursor();
+    this.updateSelectedMoveMenuOptionFromInput(input);
+    this.moveMoveSelectBattleMenuCursor();
   }
 
   private createMainBattleMenu(): void {
@@ -107,7 +113,7 @@ export class BattleMenu {
 
   private createMonsterAttackSubMenu(): void {
     this.attackBattleMenuCursorPhaserImageGameObject = this.scene.add
-      .image(42, 38, uiAssetKeys.cursor, 0)
+      .image(attackMenuCursorPosition.x, attackMenuCursorPosition.y, uiAssetKeys.cursor, 0)
       .setOrigin(0.5)
       .setScale(2.5);
     this.moveSelectionSubBattleMenuPhaserContainerGameObject = this.scene.add.container(0, 448, [
@@ -146,6 +152,9 @@ export class BattleMenu {
   }
 
   private updateSelectedBattleMenuOptionFromInput(direction: Direction): void {
+    if (this.activeBattleMenu !== 'battleMain') {
+      return;
+    }
     if (this.selectedBattleMenuOption === 'fight') {
       switch (direction) {
         case 'RIGHT':
@@ -218,6 +227,9 @@ export class BattleMenu {
   }
 
   private moveMainBattleMenuCursor(): void {
+    if (this.activeBattleMenu !== 'battleMain') {
+      return;
+    }
     switch (this.selectedBattleMenuOption) {
       case 'fight':
         this.mainBattleMenuCursorPhaserImageGameObject.setPosition(
@@ -236,6 +248,112 @@ export class BattleMenu {
         return;
       default:
         exhaustiveGuard(this.selectedBattleMenuOption);
+    }
+  }
+
+  private updateSelectedMoveMenuOptionFromInput(direction: Direction): void {
+    if (this.activeBattleMenu !== 'battleMoveSelect') {
+      return;
+    }
+    if (this.selectedAttackMenuOption === 'move1') {
+      switch (direction) {
+        case 'RIGHT':
+          this.selectedAttackMenuOption = 'move2';
+          return;
+        case 'DOWN':
+          this.selectedAttackMenuOption = 'move3';
+          return;
+        case 'LEFT':
+        case 'UP':
+        case 'NONE':
+          return;
+        default:
+          exhaustiveGuard(direction);
+      }
+      return;
+    }
+    if (this.selectedAttackMenuOption === 'move2') {
+      switch (direction) {
+        case 'LEFT':
+          this.selectedAttackMenuOption = 'move1';
+          return;
+        case 'DOWN':
+          this.selectedAttackMenuOption = 'move4';
+          return;
+        case 'RIGHT':
+        case 'UP':
+        case 'NONE':
+          return;
+        default:
+          exhaustiveGuard(direction);
+      }
+      return;
+    }
+    if (this.selectedAttackMenuOption === 'move3') {
+      switch (direction) {
+        case 'RIGHT':
+          this.selectedAttackMenuOption = 'move4';
+          return;
+        case 'UP':
+          this.selectedAttackMenuOption = 'move1';
+          return;
+        case 'LEFT':
+        case 'DOWN':
+        case 'NONE':
+          return;
+        default:
+          exhaustiveGuard(direction);
+      }
+      return;
+    }
+    if (this.selectedAttackMenuOption === 'move4') {
+      switch (direction) {
+        case 'LEFT':
+          this.selectedAttackMenuOption = 'move3';
+          return;
+        case 'UP':
+          this.selectedAttackMenuOption = 'move2';
+          return;
+        case 'RIGHT':
+        case 'DOWN':
+        case 'NONE':
+          return;
+        default:
+          exhaustiveGuard(direction);
+      }
+      return;
+    }
+    exhaustiveGuard(this.selectedAttackMenuOption);
+  }
+
+  private moveMoveSelectBattleMenuCursor(): void {
+    if (this.activeBattleMenu !== 'battleMoveSelect') {
+      return;
+    }
+    switch (this.selectedAttackMenuOption) {
+      case 'move1':
+        this.attackBattleMenuCursorPhaserImageGameObject.setPosition(
+          attackMenuCursorPosition.x,
+          attackMenuCursorPosition.y
+        );
+        return;
+      case 'move2':
+        this.attackBattleMenuCursorPhaserImageGameObject.setPosition(
+          228,
+          attackMenuCursorPosition.y
+        );
+        return;
+      case 'move3':
+        this.attackBattleMenuCursorPhaserImageGameObject.setPosition(
+          attackMenuCursorPosition.x,
+          86
+        );
+        return;
+      case 'move4':
+        this.attackBattleMenuCursorPhaserImageGameObject.setPosition(228, 86);
+        return;
+      default:
+        exhaustiveGuard(this.selectedAttackMenuOption);
     }
   }
 }
